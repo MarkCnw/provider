@@ -1,0 +1,41 @@
+import 'package:flutter/material.dart';
+import 'package:learn_provider/Screen/todo_screen.dart';
+
+import 'package:learn_provider/providers/todo_loader.dart';
+import 'package:learn_provider/services/fake_todo_service.dart';
+import 'package:provider/provider.dart';
+import 'providers/todo_provider.dart';
+import 'providers/theme_provider.dart';
+
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TodoProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(
+          create: (_) => TodoLoader(FakeTodoService()),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // ฟังเฉพาะ isDark ให้รีบิวด์เฉพาะ MaterialApp
+    final isDark = context.select<ThemeProvider, bool>((t) => t.isDark);
+
+    return MaterialApp(
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      debugShowCheckedModeBanner: false,
+      home: const TodoScreen(),
+    );
+  }
+}
