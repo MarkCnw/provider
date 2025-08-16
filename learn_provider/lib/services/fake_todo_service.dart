@@ -6,3 +6,14 @@ class FakeTodoService {
     return ['Buy milk','Read book','Write code'];
   }
 }
+
+class FakeRealtimeService {
+  // สมมติ “จำนวนผู้ใช้ online” เพิ่มทุกวินาที
+  Stream<int> onlineCount() async* {
+    var n = 0;
+    while (true) {
+      await Future.delayed(const Duration(seconds: 1));
+      yield n++;
+    }
+  }
+}

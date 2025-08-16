@@ -3,8 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../providers/todo_provider.dart';
 import '../providers/theme_provider.dart';
-import '../providers/todo_loader.dart';
+import '../providers/todo_loader.dart'; // ถ้าไม่ได้ใช้ส่วนโหลด อาจลบ import นี้ได้
 import '../widgets/todo_tile.dart';
+
+// Remote (Firestore)
+import '../models/todo_item.dart';
+import '../services/todo_repo.dart';
 
 class TodoScreen extends StatefulWidget {
   const TodoScreen({super.key});
@@ -30,14 +34,20 @@ class _TodoScreenState extends State<TodoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todo = context.watch<TodoProvider>();   // ใช้ลิสต์/จำนวน
-    final loader = context.watch<TodoLoader>();   // ใช้สถานะโหลด
+    // โลคอล (Provider)
+    final todo = context.watch<TodoProvider>();
+
+    // ถ้าใช้ด่าน Future Loader อยู่ ให้เปิดบรรทัดต่อไปนี้
+    final loader = context.read<TodoLoader?>(); // อนุโลมเป็น null ถ้าไม่ได้ใส่ใน MultiProvider
+
+    // รีโมท (Firestore) มาจาก StreamProvider<List<TodoItem>>
+    final remoteTodos = context.watch<List<TodoItem>>();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Todo List'),
         actions: [
-          // Badge นับจำนวน รีบิวด์เฉพาะตัวเลข
+          // แสดงจำนวนรายการโลคอลแบบประหยัดรีบิวด์
           Selector<TodoProvider, int>(
             selector: (_, p) => p.count,
             builder: (_, count, __) => Padding(
@@ -52,7 +62,7 @@ class _TodoScreenState extends State<TodoScreen> {
               ),
             ),
           ),
-          // Toggle theme รีบิวด์เฉพาะไอคอน
+          // ปุ่มสลับธีม
           Consumer<ThemeProvider>(
             builder: (_, theme, __) => IconButton(
               tooltip: 'Toggle Theme',
@@ -65,7 +75,7 @@ class _TodoScreenState extends State<TodoScreen> {
 
       body: Column(
         children: [
-          // แถวเพิ่มงาน + ปุ่มโหลด
+          // แถวเพิ่มงานโลคอล + ปุ่มโหลด (ถ้าใช้)
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -82,33 +92,36 @@ class _TodoScreenState extends State<TodoScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // ถ้าไม่ใช้ส่วนโหลด ให้ลบบล็อกนี้ทิ้งได้
                 ElevatedButton(
-                  onPressed: loader.status == LoadStatus.loading
-                      ? null
-                      : () {
+                  onPressed: (loader != null && loader.status != LoadStatus.loading)
+                      ? () {
                           debugPrint('LOAD CLICKED');
                           loader.load();
-                        },
+                        }
+                      : null,
                   child: Text(
-                    loader.status == LoadStatus.loading ? 'Loading…' : 'Load from API',
+                    (loader != null && loader.status == LoadStatus.loading)
+                        ? 'Loading…'
+                        : 'Load from API',
                   ),
                 ),
               ],
             ),
           ),
 
-          // แสดงสถานะโหลด (อยู่นอก Row เพื่อไม่ให้แนวนอนล้น)
-          if (loader.status == LoadStatus.loading)
+          // แสดงสถานะโหลด (เฉพาะกรณีใช้ TodoLoader)
+          if (loader != null && loader.status == LoadStatus.loading)
             const Padding(
               padding: EdgeInsets.all(12),
               child: CircularProgressIndicator(),
             ),
-          if (loader.status == LoadStatus.error)
+          if (loader != null && loader.status == LoadStatus.error)
             Padding(
               padding: const EdgeInsets.all(12),
               child: Text('Error: ${loader.errorMessage}'),
             ),
-          if (loader.status == LoadStatus.done)
+          if (loader != null && loader.status == LoadStatus.done)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Column(
@@ -123,11 +136,49 @@ class _TodoScreenState extends State<TodoScreen> {
 
           const Divider(height: 16),
 
-          // ลิสต์งาน รีบิวด์เฉพาะแถวที่เปลี่ยน
+          // ----- โลคอลรายการ -----
           Expanded(
             child: ListView.builder(
               itemCount: todo.count,
-              itemBuilder: (_, i) => TodoTile(index: i),
+              itemBuilder: (_, i) => TodoTile(index: i), // รีบิวด์เฉพาะแถวที่เปลี่ยน
+            ),
+          ),
+
+          const Divider(),
+
+          // ----- ส่วน Remote (Firestore) -----
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Remote (Firestore)', style: TextStyle(fontWeight: FontWeight.bold)),
+                ElevatedButton(
+                  onPressed: () => TodoRepo()
+                      .addTodo('demo-user', 'Remote Task ${remoteTodos.length + 1}'),
+                  child: const Text('Add remote'),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              itemCount: remoteTodos.length,
+              separatorBuilder: (_, __) => const Divider(height: 0),
+              itemBuilder: (_, i) {
+                final t = remoteTodos[i];
+                return ListTile(
+                  title: Text(t.title),
+                  leading: Checkbox(
+                    value: t.done,
+                    onChanged: (v) => TodoRepo().toggleDone(t.id, v ?? false),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => TodoRepo().delete(t.id),
+                  ),
+                );
+              },
             ),
           ),
         ],
