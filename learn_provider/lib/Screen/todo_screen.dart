@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:learn_provider/Screen/remote_todo_detail_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/todo_provider.dart';
 import '../providers/theme_provider.dart';
-import '../providers/todo_loader.dart'; // ถ้าไม่ได้ใช้ส่วนโหลด อาจลบ import นี้ได้
+import '../providers/todo_loader.dart';
 import '../widgets/todo_tile.dart';
 
 // Remote (Firestore)
@@ -37,8 +38,8 @@ class _TodoScreenState extends State<TodoScreen> {
     // โลคอล (Provider)
     final todo = context.watch<TodoProvider>();
 
-    // ถ้าใช้ด่าน Future Loader อยู่ ให้เปิดบรรทัดต่อไปนี้
-    final loader = context.read<TodoLoader?>(); // อนุโลมเป็น null ถ้าไม่ได้ใส่ใน MultiProvider
+    // ใช้ watch เพื่อให้ UI รีบิวด์เมื่อ status/ผลลัพธ์เปลี่ยน
+    final loader = context.watch<TodoLoader?>();
 
     // รีโมท (Firestore) มาจาก StreamProvider<List<TodoItem>>
     final remoteTodos = context.watch<List<TodoItem>>();
@@ -53,12 +54,18 @@ class _TodoScreenState extends State<TodoScreen> {
             builder: (_, count, __) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text('Items: $count', style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  'Items: $count',
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ),
@@ -66,7 +73,9 @@ class _TodoScreenState extends State<TodoScreen> {
           Consumer<ThemeProvider>(
             builder: (_, theme, __) => IconButton(
               tooltip: 'Toggle Theme',
-              icon: Icon(theme.isDark ? Icons.dark_mode : Icons.light_mode),
+              icon: Icon(
+                theme.isDark ? Icons.dark_mode : Icons.light_mode,
+              ),
               onPressed: theme.toggle,
             ),
           ),
@@ -92,9 +101,11 @@ class _TodoScreenState extends State<TodoScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // ถ้าไม่ใช้ส่วนโหลด ให้ลบบล็อกนี้ทิ้งได้
+                // ปุ่มโหลดจาก service (optional)
                 ElevatedButton(
-                  onPressed: (loader != null && loader.status != LoadStatus.loading)
+                  onPressed:
+                      (loader != null &&
+                          loader.status != LoadStatus.loading)
                       ? () {
                           debugPrint('LOAD CLICKED');
                           loader.load();
@@ -140,7 +151,8 @@ class _TodoScreenState extends State<TodoScreen> {
           Expanded(
             child: ListView.builder(
               itemCount: todo.count,
-              itemBuilder: (_, i) => TodoTile(index: i), // รีบิวด์เฉพาะแถวที่เปลี่ยน
+              itemBuilder: (_, i) =>
+                  TodoTile(index: i), // รีบิวด์เฉพาะแถวที่เปลี่ยน
             ),
           ),
 
@@ -148,14 +160,22 @@ class _TodoScreenState extends State<TodoScreen> {
 
           // ----- ส่วน Remote (Firestore) -----
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Remote (Firestore)', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Remote (Firestore)',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 ElevatedButton(
-                  onPressed: () => TodoRepo()
-                      .addTodo('demo-user', 'Remote Task ${remoteTodos.length + 1}'),
+                  onPressed: () => TodoRepo().addTodo(
+                    'demo-user',
+                    'Remote Task ${remoteTodos.length + 1}',
+                  ),
                   child: const Text('Add remote'),
                 ),
               ],
@@ -171,12 +191,21 @@ class _TodoScreenState extends State<TodoScreen> {
                   title: Text(t.title),
                   leading: Checkbox(
                     value: t.done,
-                    onChanged: (v) => TodoRepo().toggleDone(t.id, v ?? false),
+                    onChanged: (v) =>
+                        TodoRepo().toggleDone(t.id, v ?? false),
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () => TodoRepo().delete(t.id),
                   ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RemoteTodoDetailScreen(id: t.id),
+                      ),
+                    );
+                  },
                 );
               },
             ),

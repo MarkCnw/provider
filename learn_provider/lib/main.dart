@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:learn_provider/Screen/todo_screen.dart';
-import 'package:learn_provider/firebase_options.dart';
+
 import 'package:learn_provider/models/todo_item.dart';
 
 import 'package:learn_provider/providers/todo_loader.dart';
@@ -22,9 +22,9 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => TodoProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        // ChangeNotifierProvider(
-        //   create: (_) => TodoLoader(FakeTodoService()),
-        // ),
+        ChangeNotifierProvider(
+          create: (_) => TodoLoader(FakeTodoService()),
+        ),
         StreamProvider<List<TodoItem>>(
           create: (_) => TodoRepo().streamTodos(userId),
           initialData: const [],
