@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:learn_provider/models/todo_item.dart';
+import 'package:learn_provider/services/i_todo_repo.dart';
 
-class TodoRepo {
+class TodoRepo implements ITodoRepo {
   final _col = FirebaseFirestore.instance.collection('todos');
 
   Stream<List<TodoItem>> streamTodos(String userId) {
