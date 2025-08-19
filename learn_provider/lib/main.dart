@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:learn_provider/Screen/todo_screen.dart';
 
 import 'package:learn_provider/models/todo_item.dart';
-
 import 'package:learn_provider/providers/todo_loader.dart';
-import 'package:learn_provider/services/fake_todo_service.dart';
+
+
+import 'package:learn_provider/services/i_todo_repo.dart';
 import 'package:learn_provider/services/todo_repo.dart';
 import 'package:provider/provider.dart';
 import 'providers/todo_provider.dart';
@@ -29,12 +30,13 @@ Future<void> main() async {
           create: (_) => TodoRepo().streamTodos(userId),
           initialData: const [],
         ),
+        Provider<ITodoRepo>(create: (_)=> TodoRepo(),),
 
 
-        StreamProvider<int>(
-          create: (_) => FakeRealtimeService().onlineCount(),
-          initialData: 0,
-        ),
+        // StreamProvider<int>(
+        //   create: (_) => FakeRealtimeService().onlineCount(),
+        //   initialData: 0,
+        // ),
       ],
       child: const MyApp(),
     ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:learn_provider/Screen/remote_todo_detail_screen.dart';
+import 'package:learn_provider/services/i_todo_repo.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/todo_provider.dart';
@@ -38,11 +38,21 @@ class _TodoScreenState extends State<TodoScreen> {
     // โลคอล (Provider)
     final todo = context.watch<TodoProvider>();
 
+    final repo = context.read<ITodoRepo>();
+
     // ใช้ watch เพื่อให้ UI รีบิวด์เมื่อ status/ผลลัพธ์เปลี่ยน
     final loader = context.watch<TodoLoader?>();
 
     // รีโมท (Firestore) มาจาก StreamProvider<List<TodoItem>>
     final remoteTodos = context.watch<List<TodoItem>>();
+
+    ElevatedButton(
+      onPressed: () => repo.addTodo(
+        'demo-user',
+        'Remote Task ${remoteTodos.length + 1}',
+      ),
+      child: Text('Add remote'),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -188,24 +198,9 @@ class _TodoScreenState extends State<TodoScreen> {
               itemBuilder: (_, i) {
                 final t = remoteTodos[i];
                 return ListTile(
-                  title: Text(t.title),
-                  leading: Checkbox(
-                    value: t.done,
-                    onChanged: (v) =>
-                        TodoRepo().toggleDone(t.id, v ?? false),
+                  leading: Checkbox(value: t.done, onChanged: (v) => repo.toggleDone(t.id, v ?? false),
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () => TodoRepo().delete(t.id),
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RemoteTodoDetailScreen(id: t.id),
-                      ),
-                    );
-                  },
+                  trailing: IconButton(onPressed: ()=> repo.delete(t.id), icon: Icon(Icons.delete),),
                 );
               },
             ),
