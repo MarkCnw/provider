@@ -4,10 +4,13 @@ import 'package:learn_provider/Screen/todo_screen.dart';
 
 import 'package:learn_provider/models/todo_item.dart';
 import 'package:learn_provider/providers/todo_loader.dart';
+import 'package:learn_provider/services/fake_todo_service.dart';
 
-
+// 🔥 เพิ่ม imports สำหรับ Interface
 import 'package:learn_provider/services/i_todo_repo.dart';
-import 'package:learn_provider/services/todo_repo.dart';
+import 'package:learn_provider/services/todo_repo.dart'; // ของจริง
+// import 'package:learn_provider/services/fake_todo_repo.dart'; // ของปลอม (สำหรับเทส)
+
 import 'package:provider/provider.dart';
 import 'providers/todo_provider.dart';
 import 'providers/theme_provider.dart';
@@ -16,7 +19,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-   const userId = 'demo-user'; // ← เปลี่ยนให้ตรงผู้ใช้จริง
+  const userId = 'demo-user'; // ← เปลี่ยนให้ตรงผู้ใช้จริง
 
   runApp(
     MultiProvider(
@@ -26,17 +29,16 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) => TodoLoader(FakeTodoService()),
         ),
+
+        // 🔥 เพิ่ม Interface Provider
+        Provider<ITodoRepo>(create: (_) => TodoRepo()), // ⬅️ ของจริงตอนรันแอป
+        // Provider<ITodoRepo>(create: (_) => FakeTodoRepo()), // ⬅️ ใช้ตอนเทส
+
+        // 🔥 ปรับให้ใช้ repo ผ่าน context
         StreamProvider<List<TodoItem>>(
-          create: (_) => TodoRepo().streamTodos(userId),
+          create: (ctx) => ctx.read<ITodoRepo>().streamTodos(userId),
           initialData: const [],
         ),
-        Provider<ITodoRepo>(create: (_)=> TodoRepo(),),
-
-
-        // StreamProvider<int>(
-        //   create: (_) => FakeRealtimeService().onlineCount(),
-        //   initialData: 0,
-        // ),
       ],
       child: const MyApp(),
     ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:learn_provider/services/i_todo_repo.dart';
+import 'package:learn_provider/Screen/remote_todo_detail_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/todo_provider.dart';
@@ -7,9 +7,9 @@ import '../providers/theme_provider.dart';
 import '../providers/todo_loader.dart';
 import '../widgets/todo_tile.dart';
 
-// Remote (Firestore)
+// Remote (Firestore) - 🔥 ใช้ Interface แทน
 import '../models/todo_item.dart';
-import '../services/todo_repo.dart';
+import '../services/i_todo_repo.dart'; // ⬅️ Interface
 
 class TodoScreen extends StatefulWidget {
   const TodoScreen({super.key});
@@ -38,6 +38,7 @@ class _TodoScreenState extends State<TodoScreen> {
     // โลคอล (Provider)
     final todo = context.watch<TodoProvider>();
 
+    // 🔥 ดึง repo ที่ฉีดมา (ไม่ใช่ new TodoRepo() ตรงๆ)
     final repo = context.read<ITodoRepo>();
 
     // ใช้ watch เพื่อให้ UI รีบิวด์เมื่อ status/ผลลัพธ์เปลี่ยน
@@ -45,14 +46,6 @@ class _TodoScreenState extends State<TodoScreen> {
 
     // รีโมท (Firestore) มาจาก StreamProvider<List<TodoItem>>
     final remoteTodos = context.watch<List<TodoItem>>();
-
-    ElevatedButton(
-      onPressed: () => repo.addTodo(
-        'demo-user',
-        'Remote Task ${remoteTodos.length + 1}',
-      ),
-      child: Text('Add remote'),
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -181,8 +174,9 @@ class _TodoScreenState extends State<TodoScreen> {
                   'Remote (Firestore)',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
+                // 🔥 ใช้ repo ผ่าน interface
                 ElevatedButton(
-                  onPressed: () => TodoRepo().addTodo(
+                  onPressed: () => repo.addTodo(
                     'demo-user',
                     'Remote Task ${remoteTodos.length + 1}',
                   ),
@@ -198,9 +192,24 @@ class _TodoScreenState extends State<TodoScreen> {
               itemBuilder: (_, i) {
                 final t = remoteTodos[i];
                 return ListTile(
-                  leading: Checkbox(value: t.done, onChanged: (v) => repo.toggleDone(t.id, v ?? false),
+                  title: Text(t.title),
+                  // 🔥 ใช้ repo ผ่าน interface
+                  leading: Checkbox(
+                    value: t.done,
+                    onChanged: (v) => repo.toggleDone(t.id, v ?? false),
                   ),
-                  trailing: IconButton(onPressed: ()=> repo.delete(t.id), icon: Icon(Icons.delete),),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => repo.delete(t.id),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RemoteTodoDetailScreen(id: t.id),
+                      ),
+                    );
+                  },
                 );
               },
             ),
